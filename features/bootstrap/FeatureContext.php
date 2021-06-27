@@ -9,9 +9,6 @@ use Demo\Models\Shift;
 use Demo\Models\Shop;
 use Demo\Models\Staff;
 use Demo\Services\SingleManning\Calculator;
-use Demo\Services\SingleManning\DataTransforms\DailyHoursToDailySingleMinutes;
-use Demo\Services\SingleManning\DataTransforms\ShiftToDailyHours;
-use Demo\Utils\RunTransform;
 use PHPUnit\Framework\Assert;
 
 /**
@@ -21,7 +18,6 @@ class FeatureContext implements Context
 {
     private Shop $shop;
     private Rota $rota;
-    private Shift $shift;
     private DateTimeZone $timezone;
 
     /**
@@ -72,7 +68,7 @@ class FeatureContext implements Context
             shop: $this->shop,
         );
     
-        $this->shift = new Shift(
+        new Shift(
             rota: $this->rota,
             staff: $staff,
             start_time: (new DateTime(timezone: $this->timezone))->modify("$day this week +$start hour"),
@@ -119,16 +115,7 @@ class FeatureContext implements Context
         int $supplement,
     ): void {
 
-        $single_manning = call_user_func(
-            new Calculator(
-                [
-                    new RunTransform(new ShiftToDailyHours()),
-                    new RunTransform(new DailyHoursToDailySingleMinutes()),
-                ],
-            ),
-            $this->rota
-        );
-
+        $single_manning = (new Calculator())->getSingleManningData($this->rota);
         $date = (new DateTime(timezone: $this->timezone))->modify("$day this week")->format('Y-m-d');
         
         Assert::assertEquals(
